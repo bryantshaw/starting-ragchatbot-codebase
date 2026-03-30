@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RAG Query Flow</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+    .diagram {
+      width: 780px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      color: #a0aec0;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    /* ── Nodes ── */
+    .node {
+      border-radius: 10px;
+      padding: 14px 20px;
+      position: relative;
+    }
+    .node-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .node-sub {
+      font-size: 12px;
+      opacity: 0.75;
+    }
+    .node-steps {
+      margin-top: 8px;
+      list-style: none;
+    }
+    .node-steps li {
+      font-size: 12px;
+      padding: 3px 0;
+      opacity: 0.85;
+    }
+    .node-steps li::before {
+      content: "▸ ";
+      opacity: 0.5;
+    }
+
+    /* colour themes */
+    .blue  { background: #1a2a4a; border: 1.5px solid #3b82f6; }
+    .blue  .node-title { color: #93c5fd; }
+    .green { background: #1a3a2a; border: 1.5px solid #22c55e; }
+    .green .node-title { color: #86efac; }
+    .purple{ background: #2a1a4a; border: 1.5px solid #a855f7; }
+    .purple .node-title { color: #d8b4fe; }
+    .orange{ background: #3a2a1a; border: 1.5px solid #f97316; }
+    .orange .node-title { color: #fdba74; }
+    .teal  { background: #1a3a3a; border: 1.5px solid #14b8a6; }
+    .teal  .node-title { color: #5eead4; }
+
+    /* ── Layout columns ── */
+    .row {
+      display: flex;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .col { flex: 1; }
+
+    /* ── Arrows ── */
+    .arrow-down {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 6px 0;
+      gap: 0;
+    }
+    .arrow-down .line {
+      width: 2px;
+      height: 22px;
+      background: #4a5568;
+    }
+    .arrow-down .head {
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid #4a5568;
+    }
+    .arrow-label {
+      font-size: 11px;
+      color: #718096;
+      text-align: center;
+      margin: -4px 0 4px;
+    }
+
+    /* bidirectional horizontal arrow between two nodes */
+    .h-arrows {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin: 8px 0;
+    }
+    .h-arrows .label {
+      font-size: 11px;
+      color: #718096;
+      text-align: center;
+      max-width: 90px;
+    }
+    .h-arrows svg { flex-shrink: 0; }
+
+    /* section separator label */
+    .section-label {
+      font-size: 11px;
+      color: #4a5568;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-align: center;
+      margin: 20px 0 8px;
+      border-top: 1px dashed #2d3748;
+      padding-top: 12px;
+    }
+
+    /* tool call badge */
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 99px;
+      margin-left: 6px;
+      vertical-align: middle;
+      letter-spacing: 0.04em;
+    }
+    .badge-orange { background: #7c3d0f; color: #fdba74; }
+    .badge-purple { background: #4c1d95; color: #d8b4fe; }
+  </style>
+</head>
+<body>
+<div class="diagram">
+  <h1>RAG Chatbot — User Query Flow</h1>
+
+  <!-- FRONTEND -->
+  <div class="node blue">
+    <div class="node-title">Frontend <span class="badge badge-purple">Browser</span></div>
+    <div class="node-sub">User types a question → script.js sends <code>POST /api/query</code></div>
+    <ul class="node-steps">
+      <li>Payload: <code>{ query, session_id }</code></li>
+      <li>Displays answer + source citations on response</li>
+    </ul>
+  </div>
+
+  <div class="arrow-down"><div class="line"></div><div class="head"></div></div>
+  <div class="arrow-label">HTTP POST /api/query</div>
+
+  <!-- FASTAPI -->
+  <div class="node green">
+    <div class="node-title">app.py <span class="badge badge-orange">FastAPI</span></div>
+    <ul class="node-steps">
+      <li>Create session if none exists → <code>SessionManager</code></li>
+      <li>Delegate to <code>rag_system.query(query, session_id)</code></li>
+      <li>Return <code>{ answer, sources, session_id }</code></li>
+    </ul>
+  </div>
+
+  <div class="arrow-down"><div class="line"></div><div class="head"></div></div>
+
+  <!-- RAG SYSTEM -->
+  <div class="node purple">
+    <div class="node-title">rag_system.py <span class="badge badge-purple">Orchestrator</span></div>
+    <ul class="node-steps">
+      <li>Load conversation history from <code>SessionManager</code></li>
+      <li>Forward query + history + tool definitions → <code>AIGenerator</code></li>
+      <li>Collect sources from <code>ToolManager</code> after generation</li>
+      <li>Save exchange back to <code>SessionManager</code></li>
+    </ul>
+  </div>
+
+  <div class="arrow-down"><div class="line"></div><div class="head"></div></div>
+
+  <!-- AI + Vector side by side -->
+  <div class="row">
+    <div class="col">
+      <div class="node orange" style="height:100%;">
+        <div class="node-title">ai_generator.py</div>
+        <div class="node-sub">Claude API</div>
+        <ul class="node-steps">
+          <li>Sends query + history to Claude</li>
+          <li>Claude decides to call <code>CourseSearchTool</code></li>
+          <li>Receives chunks, generates grounded answer</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- bidirectional arrow -->
+    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:8px 0;">
+      <svg width="40" height="14" viewBox="0 0 40 14">
+        <defs>
+          <marker id="l" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M6,0 L0,3 L6,6" fill="none" stroke="#4a5568" stroke-width="1.5"/>
+          </marker>
+          <marker id="r" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#4a5568" stroke-width="1.5"/>
+          </marker>
+        </defs>
+        <line x1="6" y1="5" x2="34" y2="5" stroke="#4a5568" stroke-width="1.5" marker-start="url(#l)" marker-end="url(#r)"/>
+      </svg>
+      <span style="font-size:10px;color:#4a5568;text-align:center;max-width:48px;line-height:1.3;">tool call / chunks</span>
+    </div>
+
+    <div class="col">
+      <div class="node teal" style="height:100%;">
+        <div class="node-title">vector_store.py</div>
+        <div class="node-sub">ChromaDB</div>
+        <ul class="node-steps">
+          <li>Embed query with Sentence Transformers</li>
+          <li>Cosine similarity search</li>
+          <li>Return top-N document chunks</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-down"><div class="line"></div><div class="head"></div></div>
+  <div class="arrow-label">answer + sources</div>
+
+  <!-- FRONTEND again (response) -->
+  <div class="node blue">
+    <div class="node-title">Frontend <span class="badge badge-purple">Browser</span></div>
+    <div class="node-sub">Renders answer with cited source documents</div>
+  </div>
+
+  <!-- Legend -->
+  <div class="section-label">Components</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:4px;">
+    <span style="font-size:11px;color:#93c5fd;">■ UI Layer</span>
+    <span style="font-size:11px;color:#86efac;">■ API Layer</span>
+    <span style="font-size:11px;color:#d8b4fe;">■ Orchestration</span>
+    <span style="font-size:11px;color:#fdba74;">■ AI (Claude)</span>
+    <span style="font-size:11px;color:#5eead4;">■ Vector Store</span>
+  </div>
+</div>
+</body>
+</html>
