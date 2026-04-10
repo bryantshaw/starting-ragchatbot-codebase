@@ -53,4 +53,4 @@ uv run uvicorn app:app --reload --port 8000
 The application will be available at:
 - Web Interface: `http://localhost:8000`
 - API Documentation: `http://localhost:8000/docs`
-
+   
