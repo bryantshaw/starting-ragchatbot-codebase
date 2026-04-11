@@ -83,6 +83,23 @@ header h1 {
     padding: 1.5rem;
     overflow-y: auto;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-pinterest {
+    margin-top: auto;
+    padding-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pinterest-logo {
+    width: 200px;
+    height: 200px;
+    fill: var(--primary-color);
 }
 
 /* Custom Scrollbar for Sidebar */
